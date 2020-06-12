@@ -62,14 +62,10 @@ async function run() {
     for(let list_i = 0, max_wk, subject_name, viddir; list_i < list.length; list_i++) {
 
         await page.evaluate(kj => eclassRoom(kj), list[list_i]);
-        await page.goto(
-            'http://lms.mju.ac.kr/ilos/st/course/online_list_form.acl',
-            { waitUntil: 'networkidle0' }
-        );
         await page.waitForSelector('.wb-on');
         max_wk = await page.$$eval('.wb-on', l => l.length);
-        await page.waitForSelector('a[href="/ilos/st/course/submain_form.acl"]');
-        subject_name = await page.$eval('a[href="/ilos/st/course/submain_form.acl"]', e => e.textContent);
+        await page.waitForSelector('.welcome_subject');
+        subject_name = await page.$eval('.welcome_subject', e => e.textContent.split('(')[0]);
 
         console.log(`\nCourse ${list_i + 1}: ${subject_name}`);
 
