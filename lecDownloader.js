@@ -66,8 +66,8 @@ async function run() {
             'http://lms.mju.ac.kr/ilos/st/course/online_list_form.acl',
             { waitUntil: 'networkidle0' }
         );
-        await page.waitForSelector('.wb-week');
-        max_wk = await page.$$eval('.wb-week', l => l.length);
+        await page.waitForSelector('.wb-on');
+        max_wk = await page.$$eval('.wb-on', l => l.length);
         await page.waitForSelector('a[href="/ilos/st/course/submain_form.acl"]');
         subject_name = await page.$eval('a[href="/ilos/st/course/submain_form.acl"]', e => e.textContent);
 
