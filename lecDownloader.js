@@ -61,7 +61,7 @@ async function run() {
     if(!fs.existsSync(downloadRoot)) fs.mkdirSync(downloadRoot);
     console.log('Download start');
 
-    for(let list_i = 4, max_wk, subject_name, viddir; list_i < list.length; list_i++) {
+    for(let list_i = 0, max_wk, subject_name, viddir; list_i < list.length; list_i++) {
 
         await page.evaluate(kj => eclassRoom(kj), list[list_i]);
         await page.waitForSelector('.wb-on');
