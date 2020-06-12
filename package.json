@@ -1,0 +1,16 @@
+{
+  "name": "lecdownloader",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lecDownloader.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^3.3.0",
+    "readline-sync": "^1.4.10",
+    "request": "^2.88.2"
+  }
+}
