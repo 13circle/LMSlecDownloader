@@ -2,13 +2,15 @@ const puppeteer = require('puppeteer');
 const request = require('request');
 const fs = require('fs');
 const readlineSync = require('readline-sync');
+const youtubedl = require('youtube-dl');
 const hiddenQuestion = require('./hidden-question').hiddenQuestion;
 
 let download_info = {
     donwloaded: 0, max: 0,
     view: 0, view_max: 0, wk: 0,
     viewCompleted: false,
-    wkCompleted: false
+    wkCompleted: false,
+    isYoutube: false
 };
 let downloadRoot = './DownloadedCourses';
 
@@ -59,7 +61,7 @@ async function run() {
     if(!fs.existsSync(downloadRoot)) fs.mkdirSync(downloadRoot);
     console.log('Download start');
 
-    for(let list_i = 0, max_wk, subject_name, viddir; list_i < list.length; list_i++) {
+    for(let list_i = 4, max_wk, subject_name, viddir; list_i < list.length; list_i++) {
 
         await page.evaluate(kj => eclassRoom(kj), list[list_i]);
         await page.waitForSelector('.wb-on');
@@ -137,9 +139,17 @@ async function run() {
                 download_info.donwloaded = 0;
                 for(let link_i = 0, file, video_link, vidname, vidpath; link_i < view_links.length; link_i++) {
                     await page.goto(view_links[link_i], {waitUntil:'networkidle0'});
+
                     video_frame = await (await page.$('#contentViewer')).contentFrame();
-                    await video_frame.waitForSelector('#test_player_html5_api source');
-                    video_link = await video_frame.$eval('#test_player_html5_api source', e => e.getAttribute('src'));
+                    await video_frame.waitForSelector('video');
+                    if(await video_frame.$('video source') != null) {
+                        video_link = await video_frame.$eval('video source', e => e.getAttribute('src'));
+                        download_info.isYoutube = false;
+                    } else {
+                        video_link = await video_frame.$eval('link[rel="canonical"]', e => e.getAttribute('href'));
+                        download_info.isYoutube = true;
+                    }
+                    
                     vidname = await page.$eval(
                         `.navi-tables > li:nth-child(${link_i + 1}) > .item-title-lesson`,
                         e => e.textContent.replace(/ /g, '_') + '.mp4'
@@ -148,20 +158,43 @@ async function run() {
                 
                     console.log(`Donwloading ${vidname}...`);
 
-                    request({
-                        url: video_link,
-                        strictSSL: false
-                    })
-                    .on('response', response => {
-                        if(response.statusCode >= 400) return;
-                        file = fs.createWriteStream(vidpath);
-                        response.pipe(file).on('error', err => {
-                            fs.unlink(vidpath, err => {
-                                if(err) throw err;
+                    if(!download_info.isYoutube) {
+                        request({
+                            url: video_link,
+                            strictSSL: false
+                        })
+                        .on('response', response => {
+                            if(response.statusCode >= 400) return;
+                            file = fs.createWriteStream(vidpath);
+                            response.pipe(file).on('error', err => {
+                                fs.unlink(vidpath, err => {
+                                    if(err) throw err;
+                                });
+                                process.exit(1);
                             });
-                            process.exit(1);
+                            file.on('finish', () => {
+                                download_info.donwloaded++;
+                                console.log(`${vidname} download complete`);
+                                if(download_info.donwloaded == download_info.max) {
+                                    download_info.viewCompleted = true;
+                                    download_info.view++;
+                                    if(download_info.view == download_info.view_max) {
+                                        download_info.wkCompleted = true;
+                                        console.log(`WEEK #${download_info.wk} download complete`);
+                                    }
+                                }
+                                file.close();
+                            });
+                            file.on('error', err => {
+                                fs.unlink(vidpath, err => {
+                                    if(err) throw err;
+                                });
+                                process.exit(1);
+                            });
                         });
-                        file.on('finish', () => {
+                    } else {
+                        youtubedl(video_link)
+                        .on('end', () => {
                             download_info.donwloaded++;
                             console.log(`${vidname} download complete`);
                             if(download_info.donwloaded == download_info.max) {
@@ -172,15 +205,8 @@ async function run() {
                                     console.log(`WEEK #${download_info.wk} download complete`);
                                 }
                             }
-                            file.close();
-                        });
-                        file.on('error', err => {
-                            fs.unlink(vidpath, err => {
-                                if(err) throw err;
-                            });
-                            process.exit(1);
-                        });
-                    });
+                        }).pipe(fs.createWriteStream(vidpath));
+                    }
                 }
                 while(!download_info.viewCompleted) await page.waitFor(1000);
                 await page.goto(
