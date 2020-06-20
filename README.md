@@ -1,4 +1,3 @@
-# LMSlecDownloader
 명지대학교 LMS 사용자 전용 강의 영상 다운로더
 
 ## 설치 방법
@@ -36,3 +35,7 @@
 >         - 강의 2
 >             - ....
 >         - ...
+## 📝 License
+
+This project uses the [MIT Lisence](LICENSE)
+=======
